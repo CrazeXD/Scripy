@@ -1,5 +1,5 @@
 import time
-from PIL import Image
+from PIL import Image, ImageDraw
 import colors 
 class RLEConversion:
     def __init__(self, filepath, seperator = " ", colorname=False):
@@ -33,31 +33,36 @@ class RLEConversion:
                             indexstart = index
                             break
                     pixels[row][itemindex] = [pixels[row][itemindex][:indexstart], pixels[row][itemindex][indexstart:]]
-        return pixels
+        return pixels 
+
     def render(self, colormode = "WB", scale = 1, backgroundcolor = "white"):
-        pixels = self.parser()
         #Check size
-        height = len(pixels)*scale
+        self.pixels = self.parser()
+        height = len(self.pixels)
         #Check width to make sure it's constant
         widths = []
-        for i in pixels:
-            for j in pixels:
+        for i in self.pixels:
+            for j in i:
                 widths.append(len(j))
         for i in range(len(widths)):
             if widths[i-1]!=widths[i]:
                 return "Error, width of image must be constant. Number of values in the rows of the file is not constant.\n"
-        width = widths[0]*scale
+        width = widths[0]
         image = Image.new(mode="RGB", size = (width, height), color = colors.get(backgroundcolor))
+        draw = ImageDraw.Draw(image)
+        startingcoords = [0, 0]
+        for row in self.pixels:
+            for item in row:
+                for i in range(int(item[0])+1):
+                    draw.rectangle([tuple(startingcoords), (startingcoords[0]+1, startingcoords[1]+1)], fill = {"W": "white", "B":"black"}[item[1]])
+                    startingcoords[0]+=1
+                startingcoords[1]+=1
         image.show()
-        if self._colorname == True:
-            if colormode == "WB":
-                for row in pixels:
-                    for item in row:
-                        pass
         return
 
         
 
 if __name__ == "__main__":
     obj = RLEConversion("D:\..txt", seperator = ",", colorname = True)
-    obj.render(scale = 100)
+    obj.render(scale = 100, backgroundcolor = "blue2", colormode="WB")
+    print(obj.pixels)
