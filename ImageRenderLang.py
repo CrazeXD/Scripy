@@ -1,7 +1,7 @@
 import time
-from PIL import Image, ImageDraw
+from turtle import *
 import colors 
-class RLEConversion:
+class ImageRenderLang:
     def __init__(self, filepath, seperator = " ", colorname=False):
         self._seperator = seperator
         self._colorname = colorname
@@ -33,36 +33,28 @@ class RLEConversion:
                             indexstart = index
                             break
                     pixels[row][itemindex] = [pixels[row][itemindex][:indexstart], pixels[row][itemindex][indexstart:]]
-        return pixels 
+        return pixels
 
-    def render(self, colormode = "WB", scale = 1, backgroundcolor = "white"):
-        #Check size
+    def addtoobj(self):
         self.pixels = self.parser()
+    def render(self, colormode = "WB", scale = 1, backgroundcolor = "white"):
         height = len(self.pixels)
-        #Check width to make sure it's constant
         widths = []
-        for i in self.pixels:
-            for j in i:
-                widths.append(len(j))
-        for i in range(len(widths)):
-            if widths[i-1]!=widths[i]:
-                return "Error, width of image must be constant. Number of values in the rows of the file is not constant.\n"
-        width = widths[0]
-        image = Image.new(mode="RGB", size = (width, height), color = colors.get(backgroundcolor))
-        draw = ImageDraw.Draw(image)
-        startingcoords = [0, 0]
-        for row in self.pixels:
+        for row in self.pixels():
+            currentwidth = 0
             for item in row:
-                for i in range(int(item[0])+1):
-                    draw.rectangle([tuple(startingcoords), (startingcoords[0]+1, startingcoords[1]+1)], fill = {"W": "white", "B":"black"}[item[1]])
-                    startingcoords[0]+=1
-                startingcoords[1]+=1
-        image.show()
-        return
+                currentwidth+=int(item[0])
+            widths.append(currentwidth)
+        if all(ele == widths[0] for ele in widths):
+            pass
+        else:
+            return f"Fatal render error: Width of image does not stay constant throughout image."
+        
 
         
 
 if __name__ == "__main__":
-    obj = RLEConversion("D:\..txt", seperator = ",", colorname = True)
-    obj.render(scale = 100, backgroundcolor = "blue2", colormode="WB")
+    obj = ImageRenderLang("D:\..txt", seperator = ",", colorname = True)
+    obj.addtoobj()
+    #obj.render(scale = 100, colormode="WB")
     print(obj.pixels)
