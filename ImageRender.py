@@ -1,10 +1,10 @@
 from PIL import Image
 import numpy as np
 from turtle import *
-import colors 
-class ImageRenderLang:
-    def __init__(self, filepath): #seperator = " "
-        self._seperator = ","
+import colors
+
+class ImageRender:
+    def __init__(self, filepath):
         file = open(filepath)
         self._compressedValuesDefault = file.readlines()
         self._compressedValuesDefault = [value for value in self._compressedValuesDefault if value!="\n"] #Only get values that are not newlines
@@ -13,21 +13,25 @@ class ImageRenderLang:
         for i in range(len(self._compressedValuesDefault)-1):
             self._compressedValuesDefault[i] = self._compressedValuesDefault[i][:-1]
         
+        if self._compressedValuesDefault[0] == "OP OFF":
+            self._printing = False
+            self._compressedValuesDefault.pop(0)
+        else:
+            self._printing = True
         #Access header values then remove it
         self._compressedValuesDefault.pop(0)
-        if self._compressedValuesDefault[0] == "WB" or self._compressedValuesDefault[0] == "RGB":
-            self._colormode = self._compressedValuesDefault[1]
-        else:
-            print("Error, no color mode specified for a image render. Terminating process.")
-            exit()
+        
+        self._seperator = self._compressedValuesDefault[0]
         self._compressedValuesDefault.pop(0)
-        try:
-            self._scale = int(self._compressedValuesDefault[0])
-            self._compressedValuesDefault.pop(0)
-        except:
-            self._scale = 1
-        self._backgroundcolor = colors.get(self._compressedValuesDefault[0])
-        self._compressedValuesDefault.pop(0)
+        #Find image render end
+        for index, row in enumerate(self._compressedValuesDefault):
+            if row == "ENDREN":
+                self._compressedValuesDefault = self._compressedValuesDefault[:index]
+                break
+            elif index+1 == len(self._compressedValuesDefault) and row != "ENDREN":
+                if self._printing != False:
+                    print("EOS Error: No end on image render. Assuming end of file is the end of the image...")
+
 
     def parser(self):
         #Parse the seperators and add pixels into individual arrays
@@ -37,7 +41,8 @@ class ImageRenderLang:
             #Pop the 0s
             for item in range(len(currentrow)-1):
                 if currentrow[item].startswith("0"):
-                    print(f"Removed item {currentrow[item]} from row {linenumber+1} due to 0 start value.")
+                    if self._printing != False:
+                        print(f"Removed item {currentrow[item]} from row {linenumber+1} due to 0 start value.")
                     currentrow.pop(item)
             compressedpixels.append(currentrow)
         #compressedpixels -> 2D Array, X-Axis = Row, Y-Axis = Item with color
@@ -51,11 +56,13 @@ class ImageRenderLang:
                         indexstart = index
                         break
                 compressedpixels[row][itemindex] = [compressedpixels[row][itemindex][:indexstart], compressedpixels[row][itemindex][indexstart:]]
-        print("Extracted pixels from file.\n")
+        if self._printing != False:
+            print("Extracted pixels from file.")
         return compressedpixels
 
     def addtoobj(self):
-        print("Added pixels to class to begin rendering.")
+        if self._printing != False:
+            print("Added pixels to class to begin rendering.")
         self.compressedpixels = self.parser()
 
     def convertToIndividual(self):
@@ -74,10 +81,12 @@ class ImageRenderLang:
 
     def render(self):
         pixels = self.convertToIndividual()
-        print(pixels)
         # Convert the pixels into an array using numpy
-        array = np.array(pixels, dtype=np.uint8)
-
+        try:
+            array = np.array(pixels, dtype=np.uint8)
+        except:
+            print("Length error: Length of rows is not constant. This could be due to a 0 starting value, or a missing pixel.")
+            exit()
         # Use PIL to create an image from the new array of pixels
         new_image = Image.fromarray(array)
         new_image.save('new.png')
@@ -87,7 +96,7 @@ class ImageRenderLang:
         
 
 if __name__ == "__main__":
-    obj = ImageRenderLang("D:\..txt")
+    obj = ImageRender("D:\..txt")
     obj.addtoobj()
     obj.convertToIndividual()
     obj.render()
