@@ -1,3 +1,4 @@
+import sys
 from PIL import Image
 import numpy as np
 from turtle import *
@@ -32,10 +33,15 @@ class ImageRender:
         #Find image render end
         for index, row in enumerate(self._compressedValuesDefault):
             if row == "ENDREN":
-                self._compressedValuesDefault = self._compressedValuesDefault[:index]
-                self.commandIndexStartInclusive = index+1
-                self.commandListRows = self._compressedValuesDefault[index+1:]
-                break
+                if index!=len(self._compressedValuesDefault)-1:
+                    self.existscommands = True
+                    self._compressedValuesDefault = self._compressedValuesDefault[:index]
+                    self._compressedValuesDefault.pop(-1)
+                    self.commandIndexStartInclusive = index+1
+                    self.commandListRows = self._compressedValuesDefault[index+1:]
+                    break
+                else:
+                    self.existscommands = False #Are commands there
             elif index+1 == len(self._compressedValuesDefault) and row != "ENDREN":
                 if self._printing != False:
                     print("EOS Error: No end on image render. Assuming end of file is the end of the image...")
@@ -66,6 +72,7 @@ class ImageRender:
                 compressedpixels[row][itemindex] = [compressedpixels[row][itemindex][:indexstart], compressedpixels[row][itemindex][indexstart:]]
         if self._printing != False:
             print("Extracted pixels from file.")
+        compressedpixels.pop(-1)
         return compressedpixels
 
     def addtoobj(self):
@@ -78,6 +85,7 @@ class ImageRender:
         #Why on earth is self._colormode == 1
         #if self._colormode == "WB":
         colorlist = {"W": "white", "B": "black"}
+        
         for row in self.compressedpixels:
             newrow = []
             for item in row:
@@ -102,12 +110,70 @@ class ImageRender:
         new_image.save('new.png')
         print("Render completed.")
 
-        
+class ImageCommands:
 
+    def crop(self, crops):
+        self._im.crop(crops)
+    def rotate(self, theta):
+        self._im.rotate(theta)
+    def evalcomands(self):
+        for index, i in enumerate(self.commands):
+            commandlist = {"ROTATE": "self.rotate(commandparams)", "CROP": "self.crop(commandparams)"}
+            for command in commandlist:
+                if command in i:
+                    commandparams = i[len(command)+1:]
+                    try:
+                        eval(commandlist[command])
+                    except:
+                        print(f"Fatal error: Line {index+self.commandindexstart} -> Invalid arguments.")
+                else:
+                    pass
+
+    def __init__(self, imagePath, commands = None, file = None, commandindexstart = 0):
+        if commands == None and file == None:
+            print("Fatal Error: No base input provided for image altercation.")
+            exit()
+        elif any([commands, file] == ""):
+            print("Fatal error: Filepath is empty.")
+            exit()
+        if commands == None:
+            filer = file.open()
+            self.commands = filer.readlines()
+            filer.close()
+            self.commands.pop(0) #COMMANDS
+            for index, j in enumerate(self.commands):
+                if j == "ENDCOMMANDS":
+                    endindex = index
+            if not any(self.commands == "ENDCOMMANDS"):
+                print("EOS Error: No end on image commands. Assuming end of file is the end of the commands...")
+            self.commands.pop(endindex) #ENDCOMMANDS
+        elif file == None:
+            self.commands = commands
+        self._im = Image.open(imagePath)
+        
         
 
 if __name__ == "__main__":
-    obj = ImageRender("D:\..txt")
-    obj.addtoobj()
-    obj.convertToIndividual()
-    obj.render()
+    try: 
+       file = r"{}".format(sys.argv[1])
+    except IndexError:
+        print("Fatal error: Missing input file.")
+        exit()
+    if file.endswith(".code"):
+        opened = open(file, "r", encoding="utf-8")
+    else:
+        print("Fatal error: Invalid input file.")
+        exit()
+
+    readlines = opened.readlines()
+    opened.close()
+    if readlines[0] == "@OP OFF":
+        type = readlines[1]
+    else:
+        type = readlines[0]
+    print(type)
+    if type == "IMREN\n":
+        starter = ImageRender(file)
+        print(starter.parse())
+        starter.addtoobj()
+        starter.render()
