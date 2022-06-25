@@ -66,7 +66,10 @@ class ImageRender:
             for itemindex in range(len(compressedpixels[row])):
                 indexstart = 0
                 for index, charachter in enumerate(compressedpixels[row][itemindex]):
-                    if str(charachter).lower() in letters:
+                    if charachter == "#":
+                        indexstart = index
+                        break
+                    elif str(charachter).lower() in letters:
                         indexstart = index
                         break
                 compressedpixels[row][itemindex] = [compressedpixels[row][itemindex][:indexstart], compressedpixels[row][itemindex][indexstart:]]
@@ -84,12 +87,17 @@ class ImageRender:
         pixels = []
         #Why on earth is self._colormode == 1
         #if self._colormode == "WB":
-        colorlist = {"W": "white", "B": "black"}
+        colorlist = {"W": "white", "B": "black", "A": "aqua", "BL": "blue", "BR": "brown", "C": "cyan", "GO": "gold", "G": "gray", "GR": "green", "I": "indigo", "M": "magenta", "O": "orange",
+                     "P": "pink", "PU": "purple", "R": "red", "V": "violet", "Y": "yellow"}
         
         for row in self.compressedpixels:
             newrow = []
             for item in row:
-                newitem = colors.get(colorlist[item[1]]) #Seperate pixels into individual ones instead of multiplied, and convert color into tuple of RGB
+                if item[1].startswith("#"):
+                    h = item[1].lstrip('#') #Get the hex code
+                    newitem = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+                else:
+                   newitem = colors.get(colorlist[item[1]]) #Seperate pixels into individual ones instead of multiplied, and convert color into tuple of RGB
                 for _ in range(int(item[0])+1):
                     newrow.append(newitem)
             pixels.append(newrow)
