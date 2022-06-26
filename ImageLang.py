@@ -1,4 +1,3 @@
-from ast import Try
 import sys
 from PIL import Image
 import numpy as np
