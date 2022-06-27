@@ -6,7 +6,7 @@ import colors
 import sys
 colorlist = {"W": "white", "B": "black", "A": "aqua", "BL": "blue", "BR": "brown", "C": "cyan", "GO": "gold", "G": "gray", "GR": "green", "I": "indigo", "M": "magenta", "O": "orange",
                     "P": "pink", "PU": "purple", "R": "red", "V": "violet", "Y": "yellow"}
-def ImageRender(filepath):
+def ImageRender(filepath, savepath):
     #Open and read the file
     file = open(filepath)
     compressedValuesDefault = file.readlines()
@@ -79,8 +79,12 @@ def ImageRender(filepath):
                 newitem = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
             else:
                 newitem = colors.get(colorlist[item[1]]) #Seperate pixels into individual ones instead of multiplied, and convert color into tuple of RGB
-            for _ in range(int(item[0])):
-                newrow.append(newitem)
+            try:
+                for _ in range(int(item[0])):
+                    newrow.append(newitem)
+            except ValueError:
+                print("Fatal error: Missing numeric value before pixel color.")
+                sys.exit()
         pixels.append(newrow)
     # Convert the pixels into an array using numpy
     try:
@@ -91,10 +95,17 @@ def ImageRender(filepath):
     # Use PIL to create an image from the new array of pixels
     print("Rendering Image. Depending on the size of your file and your computer, this could take time.") if printing == True else print()
     new_image = Image.fromarray(array)
-    new_image.save('new.png')
+    try:
+        new_image.save(savepath+os.path.splitext(filepath)[0])
+    except SystemError:
+        print("You are missing the seperator. Please add a seperator to your file.")
+        sys.exit()
     print("Render completed.")
     return None
-def inverse(imagepath):
+def inverse(imagepath, savepath):
+    if not os.path.isfile(imagepath):
+        print("File not found.")
+        sys.exit()
     im = Image.open(imagepath)
     rgb_im = im.convert('RGB')
     width = im.size[0]
@@ -135,7 +146,7 @@ def inverse(imagepath):
                 count = 1
         cr.append(str(count)+current)
         code.append(cr)
-    file = open(os.path.splitext(imagepath)[0]+".code", "w", encoding="utf-8")
+    file = open(savepath+os.path.splitext(imagepath)[0]+".code", "w", encoding="utf-8")
     file.write("IMREN\n, \n")
     for indexrow, row in enumerate(code):
         for index, item in enumerate(row):
@@ -152,18 +163,25 @@ def inverse(imagepath):
 if __name__ == '__main__':
     try: 
        filepath = r"{}".format(sys.argv[1])
+       savepath = r"{}".format(sys.argv[2])
     except IndexError:
-        print("Fatal error: Missing input file.")
+        print("Fatal error: Missing input file(s).")
+        sys.exit()
+    if not os.path.isdir(savepath):
+        print("Save directory not found.")
+        sys.exit()
+    if not os.path.isfile(filepath):
+        print("File not found.")
         sys.exit()
     if filepath.endswith(".code"):
         opened = open(filepath, "r", encoding="utf-8")
     elif filepath.endswith(("png", "jpg", "jpeg", "bmp", "gif")):
-        inverse(filepath)
+        inverse(filepath, savepath)
         sys.exit()
     else:
         print("Fatal error: Invalid input file.")
         sys.exit()
-
+    
     readlines = opened.readlines()
     opened.close()
     if readlines[0] == "@OP OFF":
@@ -171,4 +189,4 @@ if __name__ == '__main__':
     else:
         type = readlines[0]
     if type == "IMREN\n":
-        ImageRender(filepath)
+        ImageRender(filepath, savepath)
