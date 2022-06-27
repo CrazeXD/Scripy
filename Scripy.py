@@ -87,7 +87,7 @@ def ImageRender(filepath):
         array = np.array(pixels, dtype=np.uint8)
     except:
         print("Length error: Length of rows is not constant. This could be due to a 0 starting value, or a missing pixel.")
-        exit()
+        sys.exit()
     # Use PIL to create an image from the new array of pixels
     print("Rendering Image. Depending on the size of your file and your computer, this could take time.") if printing == True else print()
     new_image = Image.fromarray(array)
@@ -154,15 +154,15 @@ if __name__ == '__main__':
        filepath = r"{}".format(sys.argv[1])
     except IndexError:
         print("Fatal error: Missing input file.")
-        exit()
+        sys.exit()
     if filepath.endswith(".code"):
         opened = open(filepath, "r", encoding="utf-8")
     elif filepath.endswith(("png", "jpg", "jpeg", "bmp", "gif")):
         inverse(filepath)
-        exit()
+        sys.exit()
     else:
         print("Fatal error: Invalid input file.")
-        exit()
+        sys.exit()
 
     readlines = opened.readlines()
     opened.close()
