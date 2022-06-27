@@ -1,9 +1,11 @@
+import os
 from PIL import Image
 import numpy as np
 from turtle import *
 import colors
 import sys
-
+colorlist = {"W": "white", "B": "black", "A": "aqua", "BL": "blue", "BR": "brown", "C": "cyan", "GO": "gold", "G": "gray", "GR": "green", "I": "indigo", "M": "magenta", "O": "orange",
+                    "P": "pink", "PU": "purple", "R": "red", "V": "violet", "Y": "yellow"}
 def ImageRender(filepath):
     #Open and read the file
     file = open(filepath)
@@ -68,8 +70,6 @@ def ImageRender(filepath):
         print("Extracted pixels from file.")
     compressedpixels.pop(-1)
     pixels = []
-    colorlist = {"W": "white", "B": "black", "A": "aqua", "BL": "blue", "BR": "brown", "C": "cyan", "GO": "gold", "G": "gray", "GR": "green", "I": "indigo", "M": "magenta", "O": "orange",
-                    "P": "pink", "PU": "purple", "R": "red", "V": "violet", "Y": "yellow"}
     
     for row in compressedpixels:
         newrow = []
@@ -94,7 +94,61 @@ def ImageRender(filepath):
     new_image.save('new.png')
     print("Render completed.")
     return None
-
+def inverse(imagepath):
+    im = Image.open(imagepath)
+    rgb_im = im.convert('RGB')
+    width = im.size[0]
+    height = im.size[1]
+    pixels = []
+    for row in range(height):
+        currentrow = []
+        for col in range(width):
+            currentrow.append(rgb_im.getpixel((col, row)))
+        pixels.append(currentrow)
+    for indexrow, row in enumerate(pixels):
+        for index, item in enumerate(row):
+            if item in list(colors.colors().values()):
+                keys = list(colors.colors().keys())
+                for k in keys:
+                    if colors.colors()[k] == item:
+                        colorlistvalues = list(colorlist.values())
+                        colorlistkeys = list(colorlist.keys())
+                        colorindex = colorlistvalues.index(k)
+                        coloritem = colorlistkeys[colorindex]
+                        pixels[indexrow][index] = coloritem
+            else:
+                pixels[indexrow][index] = '#%02x%02x%02x' % item
+    code = []
+    '''Make a run length encoding algorithm for the pixels'''
+    count = 1
+    for row in pixels:
+        current = row[0]
+        cr = []
+        for index, item in enumerate(row):
+            if index == 0:
+                pass
+            elif item == current:
+                count += 1
+            else:
+                cr.append(str(count)+current)
+                current = item
+                count = 1
+        cr.append(str(count)+current)
+        code.append(cr)
+    file = open(os.path.splitext(imagepath)[0]+".code", "w", encoding="utf-8")
+    file.write("IMREN\n, \n")
+    for indexrow, row in enumerate(code):
+        for index, item in enumerate(row):
+            if indexrow == len(code)-1 and index == len(row)-1:
+                file.write(item)
+            else:
+                file.write(item)
+                file.write(", ")
+        file.write("\n")
+    file.write("ENDREN")
+    file.close()
+    print("Decompile completed.")
+    
 if __name__ == '__main__':
     try: 
        filepath = r"{}".format(sys.argv[1])
@@ -103,6 +157,9 @@ if __name__ == '__main__':
         exit()
     if filepath.endswith(".code"):
         opened = open(filepath, "r", encoding="utf-8")
+    elif filepath.endswith(("png", "jpg", "jpeg", "bmp", "gif")):
+        inverse(filepath)
+        exit()
     else:
         print("Fatal error: Invalid input file.")
         exit()
