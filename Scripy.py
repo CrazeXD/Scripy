@@ -93,8 +93,48 @@ def ImageRender(filepath):
     new_image = Image.fromarray(array)
     new_image.save('new.png')
     print("Render completed.")
+    return None
 
-
+def code(filepath):
+    #Open and read the file
+    file = open(filepath, 'r')
+    code = file.readlines()
+    file.close()
+    if code[0] == "@OP OFF":
+        printer = False
+        code.pop(0)
+    code.pop(0) #Pop the type
+    for index, row in enumerate(code):
+        if row == "ENDCODE":
+            code[:index]
+            break
+        else:
+            if printer == True:
+                print("EOS Error: No end on code. Assuming end of file is the end of the code...")
+    #Create space in global scope for variables
+    code = {}
+    globals().update({"code": code})
+    for index, row in enumerate(code):
+        if row.startswith("new"):
+            row = row[3:]
+            if row[0] == " ":
+                row = row[1:]
+                args = row.split(" ")
+                args.pop(0)
+                if args[1] == "=":
+                    if args[2].startswith("\"") and args[2].endswith("\""):
+                        args[2] = args[2][1:-1]
+                    elif args[2].startswith("\'") and args[2].endswith("\'"):
+                        args[2] = args[1][1:-1]
+                    code.update("args[0]": args[2])
+                    globals().update({"code": code})
+                    
+            else:
+                print("Syntax error: Missing space after 'new' on line {index+1}. Were you trying to create a variable?")
+                exit()
+            if row[1] == " ":
+                print("Syntax error: Extra space(s) after 'new' on line {index+1}. Were you trying to create a variable?")
+                exit()
 
 if __name__ == '__main__':
     try: 
@@ -116,3 +156,5 @@ if __name__ == '__main__':
         type = readlines[0]
     if type == "IMREN\n":
         ImageRender(filepath)
+    elif type == "CODE\n":
+        code(filepath)
