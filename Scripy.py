@@ -52,6 +52,10 @@ def ImageRender(filepath, savepath):
                     print(f"Removed item {currentrow[item]} from row {linenumber+1} due to 0 start value.")
                 currentrow.pop(item)
         compressedpixels.append(currentrow)
+    #Check to see if there is a comment on any rows
+    for linenumber, row in enumerate(compressedpixels):
+        if row.startswith("//"):
+            compressedpixels.pop(linenumber)
     #compressedpixels -> 2D Array, X-Axis = Row, Y-Axis = Item with color
     #Convert compressedpixels into 3d array, with Y-Axis becoming items in a row and Z-Axis becoming the number/color of the pixel only do if colorname == True
     letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
@@ -175,7 +179,7 @@ if __name__ == '__main__':
         sys.exit()
     if filepath.endswith(".code"):
         opened = open(filepath, "r", encoding="utf-8")
-    elif filepath.endswith(("png", "jpg", "jpeg", "bmp", "gif")):
+    elif filepath.endswith(("png", "jpg", "jpeg", "bmp")):
         inverse(filepath, savepath)
         sys.exit()
     else:
