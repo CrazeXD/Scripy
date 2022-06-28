@@ -96,9 +96,12 @@ def ImageRender(filepath, savepath):
     print("Rendering Image. Depending on the size of your file and your computer, this could take time.") if printing == True else print()
     new_image = Image.fromarray(array)
     try:
-        new_image.save(savepath+os.path.splitext(filepath)[0])
+        new_image.save(savepath)
     except SystemError:
-        print("You are missing the seperator. Please add a seperator to your file.")
+        print("Syntax Error: You are missing the seperator. Please add a seperator to your file.")
+        sys.exit()
+    except ValueError:
+        print("Argument Error: You have an invalid save path.")
         sys.exit()
     print("Render completed.")
     return None
@@ -165,13 +168,10 @@ if __name__ == '__main__':
        filepath = r"{}".format(sys.argv[1])
        savepath = r"{}".format(sys.argv[2])
     except IndexError:
-        print("Fatal error: Missing input file(s).")
-        sys.exit()
-    if not os.path.isdir(savepath):
-        print("Save directory not found.")
+        print("Argument error: Missing input file(s).")
         sys.exit()
     if not os.path.isfile(filepath):
-        print("File not found.")
+        print("Argument Error: File not found.")
         sys.exit()
     if filepath.endswith(".code"):
         opened = open(filepath, "r", encoding="utf-8")
