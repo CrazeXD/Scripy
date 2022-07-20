@@ -41,7 +41,12 @@ def ImageRender(filepath, savepath):
         elif index+1 == len(compressedValuesDefault) and row != "ENDREN":
             if printing != False:
                 print("EOS Error: No end on image render. Assuming end of file is the end of the image...")
-    #Parse the seperators and add pixels into individual arrays
+    
+    #Check to see if there is a comment on any rows
+    for linenumber, row in enumerate(compressedValuesDefault):
+        if row.startswith("//"):
+            compressedValuesDefault.pop(linenumber)
+    #Parse the seperators and add pixels into individual
     compressedpixels = []
     for linenumber, row in enumerate(compressedValuesDefault):
         currentrow = row.split(seperator)
@@ -52,10 +57,7 @@ def ImageRender(filepath, savepath):
                     print(f"Removed item {currentrow[item]} from row {linenumber+1} due to 0 start value.")
                 currentrow.pop(item)
         compressedpixels.append(currentrow)
-    #Check to see if there is a comment on any rows
-    for linenumber, row in enumerate(compressedpixels):
-        if row.startswith("//"):
-            compressedpixels.pop(linenumber)
+    
     #compressedpixels -> 2D Array, X-Axis = Row, Y-Axis = Item with color
     #Convert compressedpixels into 3d array, with Y-Axis becoming items in a row and Z-Axis becoming the number/color of the pixel only do if colorname == True
     letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
@@ -153,7 +155,7 @@ def inverse(imagepath, savepath):
                 count = 1
         cr.append(str(count)+current)
         code.append(cr)
-    file = open(savepath+os.path.splitext(imagepath)[0]+".code", "w", encoding="utf-8")
+    file = open(savepath+os.path.splitext(imagepath)[0].rsplit("\\")[1] +".code", "w", encoding="utf-8")
     file.write("IMREN\n, \n")
     for indexrow, row in enumerate(code):
         for index, item in enumerate(row):
