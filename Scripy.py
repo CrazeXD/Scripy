@@ -6,112 +6,98 @@ import colors
 import sys
 colorlist = {"W": "white", "B": "black", "A": "aqua", "BL": "blue", "BR": "brown", "C": "cyan", "GO": "gold", "G": "gray", "GR": "green", "I": "indigo", "M": "magenta", "O": "orange",
                     "P": "pink", "PU": "purple", "R": "red", "V": "violet", "Y": "yellow"}
-def ImageRender(filepath, savepath):
-    #Open and read the file
+def ImageRender(filepath, savepath):  # sourcery skip: low-code-quality
     file = open(filepath)
     compressedValuesDefault = file.readlines()
-    #Only get values that are not newlines
-    compressedValuesDefault = [value for value in compressedValuesDefault if value!="\n"]
-    
-    #Remove the \n at the end of each row
-    for i in range(len(compressedValuesDefault)-1):
+    compressedValuesDefault = [value for value in compressedValuesDefault if value != "\n"]
+
+    for i in range(len(compressedValuesDefault) - 1):
         compressedValuesDefault[i] = compressedValuesDefault[i][:-1]
-    
-    #Turn output off
     if compressedValuesDefault[0] == "@OP OFF":
         printing = False
-        #Make sure to pop the line
         compressedValuesDefault.pop(0)
     else:
         printing = True
-    #Access header values then remove it
-
-    #Pop the type
     compressedValuesDefault.pop(0)
-    
     seperator = compressedValuesDefault[0]
     compressedValuesDefault.pop(0)
-    #Find image render end
     for index, row in enumerate(compressedValuesDefault):
         if row == "ENDREN":
-            if index!=len(compressedValuesDefault)-1:
+            if index != len(compressedValuesDefault) - 1:
                 compressedValuesDefault = compressedValuesDefault[:index]
                 compressedValuesDefault.pop(-1)
                 break
-        elif index+1 == len(compressedValuesDefault) and row != "ENDREN":
-            if printing != False:
+        elif index + 1 == len(compressedValuesDefault):
+            if printing:
                 print("EOS Error: No end on image render. Assuming end of file is the end of the image...")
-    
-    #Check to see if there is a comment on any rows
+
     for linenumber, row in enumerate(compressedValuesDefault):
         if row.startswith("//"):
             compressedValuesDefault.pop(linenumber)
-    #Parse the seperators and add pixels into individual
     compressedpixels = []
     for linenumber, row in enumerate(compressedValuesDefault):
         currentrow = row.split(seperator)
-        #Pop the 0s
-        for item in range(len(currentrow)-1):
+        for item in range(len(currentrow) - 1):
             if currentrow[item].startswith("0"):
-                if printing != False:
-                    print(f"Removed item {currentrow[item]} from row {linenumber+1} due to 0 start value.")
+                if printing:
+                    print(f"Removed item {currentrow[item]} from row {linenumber + 1} due to 0 start value.")
+
                 currentrow.pop(item)
         compressedpixels.append(currentrow)
-    
-    #compressedpixels -> 2D Array, X-Axis = Row, Y-Axis = Item with color
-    #Convert compressedpixels into 3d array, with Y-Axis becoming items in a row and Z-Axis becoming the number/color of the pixel only do if colorname == True
     letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-    for row in range(len(compressedpixels)):
-        for itemindex in range(len(compressedpixels[row])):
+
+    for compressedpixel in compressedpixels:
+        for itemindex in range(len(compressedpixel)):
             indexstart = 0
-            for index, charachter in enumerate(compressedpixels[row][itemindex]):
+            for index, charachter in enumerate(compressedpixel[itemindex]):
                 if charachter == "#":
                     indexstart = index
                     break
                 elif str(charachter).lower() in letters:
                     indexstart = index
                     break
-            compressedpixels[row][itemindex] = [compressedpixels[row][itemindex][:indexstart], compressedpixels[row][itemindex][indexstart:]]
-    if printing != False:
+            compressedpixel[itemindex] = [compressedpixel[itemindex][:indexstart], compressedpixel[itemindex][indexstart:]]
+
+    if printing:
         print("Extracted pixels from file.")
     compressedpixels.pop(-1)
     pixels = []
-    
     for row in compressedpixels:
         newrow = []
         for item in row:
             if item[1].startswith("#"):
-                h = item[1].lstrip('#') #Get the hex code
-                newitem = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+                h = item[1].lstrip('#')
+                newitem = tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
             else:
-                newitem = colors.get(colorlist[item[1]]) #Seperate pixels into individual ones instead of multiplied, and convert color into tuple of RGB
+                newitem = colors.get(colorlist[item[1]])
             try:
-                for _ in range(int(item[0])):
-                    newrow.append(newitem)
+                newrow.extend(newitem for _ in range(int(item[0])))
             except ValueError:
                 print("Fatal error: Missing numeric value before pixel color.")
                 sys.exit()
         pixels.append(newrow)
-    # Convert the pixels into an array using numpy
     try:
         array = np.array(pixels, dtype=np.uint8)
-    except:
+    except Exception:
         print("Length error: Length of rows is not constant. This could be due to a 0 starting value, or a missing pixel.")
+
         sys.exit()
-    # Use PIL to create an image from the new array of pixels
-    print("Rendering Image. Depending on the size of your file and your computer, this could take time.") if printing == True else print()
+    print("Rendering Image. Depending on the size of your file and your computer, this could take time.") if printing else print()
+
     new_image = Image.fromarray(array)
     try:
         new_image.save(savepath)
     except SystemError:
         print("Syntax Error: You are missing the seperator. Please add a seperator to your file.")
+
         sys.exit()
     except ValueError:
         print("Argument Error: You have an invalid save path.")
         sys.exit()
     print("Render completed.")
     return None
-def inverse(imagepath, savepath):
+
+def inverse(imagepath, savepath):  # sourcery skip: low-code-quality
     if not os.path.isfile(imagepath):
         print("File not found.")
         sys.exit()
@@ -121,9 +107,7 @@ def inverse(imagepath, savepath):
     height = im.size[1]
     pixels = []
     for row in range(height):
-        currentrow = []
-        for col in range(width):
-            currentrow.append(rgb_im.getpixel((col, row)))
+        currentrow = [rgb_im.getpixel((col, row)) for col in range(width)]
         pixels.append(currentrow)
     for indexrow, row in enumerate(pixels):
         for index, item in enumerate(row):
@@ -150,29 +134,26 @@ def inverse(imagepath, savepath):
             elif item == current:
                 count += 1
             else:
-                cr.append(str(count)+current)
+                cr.append(str(count) + current)
                 current = item
                 count = 1
-        cr.append(str(count)+current)
+        cr.append(str(count) + current)
         code.append(cr)
-    file = open(savepath+os.path.splitext(imagepath)[0].rsplit("\\")[1] +".code", "w", encoding="utf-8")
-    file.write("IMREN\n, \n")
-    for indexrow, row in enumerate(code):
-        for index, item in enumerate(row):
-            if indexrow == len(code)-1 and index == len(row)-1:
+    with open(savepath + os.path.splitext(imagepath)[0].rsplit("\\")[1] + ".code", "w", encoding="utf-8") as file:
+        file.write("IMREN\n, \n")
+        for indexrow, row in enumerate(code):
+            for index, item in enumerate(row):
                 file.write(item)
-            else:
-                file.write(item)
-                file.write(", ")
-        file.write("\n")
-    file.write("ENDREN")
-    file.close()
+                if indexrow != len(code) - 1 or index != len(row) - 1:
+                    file.write(", ")
+            file.write("\n")
+        file.write("ENDREN")
     print("Decompile completed.")
-    
+# sourcery skip: avoid-builtin-shadow
 if __name__ == '__main__':
     try: 
-       filepath = r"{}".format(sys.argv[1])
-       savepath = r"{}".format(sys.argv[2])
+        filepath = f"{sys.argv[1]}"
+        savepath = f"{sys.argv[2]}"
     except IndexError:
         print("Argument error: Missing input file(s).")
         sys.exit()
@@ -187,12 +168,9 @@ if __name__ == '__main__':
     else:
         print("Fatal error: Invalid input file.")
         sys.exit()
-    
+
     readlines = opened.readlines()
     opened.close()
-    if readlines[0] == "@OP OFF":
-        type = readlines[1]
-    else:
-        type = readlines[0]
+    type = readlines[1] if readlines[0] == "@OP OFF" else readlines[0]
     if type == "IMREN\n":
         ImageRender(filepath, savepath)
