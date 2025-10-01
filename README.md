@@ -1,8 +1,8 @@
 # Scripy
 
-## Am Image Rendering Language
+## An Image Rendering Language
 
-### Made by Craze
+### Made by Rishabh Garg
 
 **Scripy** is an image rendering language that allows you to write out the pixels of an image
 
